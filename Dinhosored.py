@@ -5,10 +5,18 @@ import keyboard
 from pynput import mouse
 import threading
 import time
+from PyQt6 import QtWidgets, QtGui
+from PyQt6.QtGui import QFont, QFontDatabase
+from PyQt6.QtCore import QDir
+from PyQt6.QtWidgets import QApplication
 import os
+import sys
+import tkinter.font as tkFont
+from pathlib import Path
 
 class DishonoredSpeedrunBhopMacro:
     def __init__(self):
+        super().__init__()
         # Chemin vers le dossier de données
         self.script_dir = os.path.dirname(__file__)
         self.data_dir = os.path.join(self.script_dir, "data")
@@ -23,6 +31,13 @@ class DishonoredSpeedrunBhopMacro:
         self.key_hook_callback = None
         self.logo_size = (3, 3)
 
+        # Create a Qt application
+        self.app = QtWidgets.QApplication(sys.argv)
+
+        # Load fonts from the specified directory
+        font_path = os.path.join(self.data_dir, "fonts")
+        # font_dir = DIR_APPLICATION / "fonts"
+        families = self.load_fonts_from_dir(font_path)
 
         # Load assigned keys and interval
         self.load_data()
@@ -60,17 +75,20 @@ class DishonoredSpeedrunBhopMacro:
         self.frame.pack(fill=tk.BOTH, expand=True)
         self.frame.configure(bg=main_color, bd=2, relief=tk.RAISED)  # Adjust background color and border
 
-        # Chemin vers le fichier de police
-        font_path = os.path.join(self.data_dir, "fonts", "Dream Orphans Bd.otf")
+        # Alternative way to set the font family for tkinter
+        if families:
+            font_family = families[0]  # Assuming you want to use the first font family found
+            self.custom_font = tkFont.Font(family=font_family, size=14)
+
         title_font_path = os.path.join(self.data_dir, "fonts", "OptimusPrinceps.ttf")
 
         # Create a Font object
-        if os.path.isfile(font_path):
-            self.custom_font = tkFont.Font(family="Dream Orphans", size=14)
+        # if os.path.isfile(font_path):
+        #     self.custom_font = tkFont.Font(family="Dream Orphans", size=14)
         if os.path.isfile(title_font_path):
             self.title_font = tkFont.Font(family="OptimusPrinceps", size=84)  # Assign to self.title_font here
-        else:
-            self.custom_font = tkFont.Font(family="Arial", size=12)  # Use a default font if the custom font file is not found
+        # else:
+        #     self.custom_font = tkFont.Font(family="Arial", size=12)  # Use a default font if the custom font file is not found
         
         # Load the logo image
         logo_path = os.path.join(self.data_dir, "logo.png")
@@ -269,23 +287,34 @@ class DishonoredSpeedrunBhopMacro:
                         elif key == "interval":
                             self.interval = int(value)
 
+    # Function to load fonts from a directory
+    def load_fonts_from_dir(self, directory):
+        families = set()
+        for fi in QDir(directory).entryInfoList(["*.ttf", "*.woff", "*.woff2"]):
+            _id = QFontDatabase.addApplicationFont(fi.absoluteFilePath())
+            families |= set(QFontDatabase.applicationFontFamilies(_id))
+        return list(families)
+
     # Function for the pro mode
     def promode(self):
         if self.isPro:
             font_path = os.path.join(self.data_dir, "fonts", "Dream Orphans Bd.otf")
             if os.path.isfile(font_path):
-                self.custom_font = tkFont.Font(family="Dream Orphans", size=14)
+                # self.custom_font = tkFont.Font(family="Dream Orphans", size=14)
                 self.custom_style.configure("Custom.TButton", font=self.custom_font)
                 self.custom_style_label.configure("Transparent.TLabel", font=self.custom_font)
                 self.pro_style.configure("Pro.TButton", font = (self.custom_font, 10))
+                self.title_style.configure("Title.TLabel", font=(self.title_font))
             self.isPro = False
         else:
             font_path = os.path.join(self.data_dir, "fonts", "Dh_script-Regular.otf")
             if os.path.isfile(font_path):
-                self.custom_font = tkFont.Font(family="Dh_script", size=17)
-                self.custom_style.configure("Custom.TButton", font=self.custom_font)
-                self.custom_style_label.configure("Transparent.TLabel", font=self.custom_font)
-                self.pro_style.configure("Pro.TButton", font = (self.custom_font))
+                self.pcustom_font = tkFont.Font(family="Dh_script", size=17)
+                self.custom_style.configure("Custom.TButton", font=self.pcustom_font)
+                self.custom_style_label.configure("Transparent.TLabel", font=self.pcustom_font)
+                self.pro_style.configure("Pro.TButton", font = (self.pcustom_font))
+                self.tcustom_font = tkFont.Font(family="Dh_script", size=79)
+                self.title_style.configure("Title.TLabel", font=(self.tcustom_font))
             self.isPro = True
 
 # Create an instance of the class
