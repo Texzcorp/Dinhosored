@@ -1,0 +1,3 @@
+trigger_key_down=h
+trigger_key_up=g
+interval=5
