@@ -1,7 +1,7 @@
 # Dinhosored
 Bhop script to be supa supa fast in dishonored speedruns with an UI
 
-# HOW TO USE
+# How to use
 1. Start by clicking on the "Assign Scroll Down Key" button to assign a key for the "Current Scroll Down Key".
 
 2. In your game settings, map the scroll down action to your jump key.
