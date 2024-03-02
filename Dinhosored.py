@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkFont
 import keyboard
-from pynput import mouse
+import mouse
+from mouse import ButtonEvent, hook
+from pynput import mouse as pymouse
 import threading
 import time
 from PyQt6 import QtWidgets, QtGui
@@ -22,15 +24,19 @@ class DishonoredSpeedrunBhopMacro:
         self.data_dir = os.path.join(self.script_dir, "data")
         # Initialize variables
         self.g_pressed = False
-        self.scroll_thread_down = None
-        self.scroll_thread_up = None
+        self.scroll_thread = None
         self.interval = 5  # Default interval in milliseconds
         self.isModifierUp = False  # Variable to store if the trigger key is a modifier key
         self.isModifierDown = False # Variable to store if the trigger key is a modifier key
         self.is_modifier = False
         self.key_hook_callback = None
         self.logo_size = (3, 3)
+        self.is_keyboard_up = None
+        self.is_keyboard_down = None
 
+        self.direction = 0
+
+        self.mutex = threading.Lock()
         # Create a Qt application
         self.app = QtWidgets.QApplication(sys.argv)
 
@@ -44,6 +50,7 @@ class DishonoredSpeedrunBhopMacro:
 
         # Setup listener for key events
         keyboard.hook(self.on_action)
+        mouse.hook(self.on_action)
 
         # Create a Tkinter window
         self.root = tk.Tk()
@@ -56,7 +63,7 @@ class DishonoredSpeedrunBhopMacro:
         self.root.iconbitmap(icon_path)
 
         # Set window transparency
-        self.root.attributes('-alpha', 0.9)
+        self.root.attributes('-alpha', 0.93)
 
         # Couleur principale
         main_color = '#060c14'
@@ -185,39 +192,65 @@ class DishonoredSpeedrunBhopMacro:
 
     # Function to continuously spam the scroll wheel event
     def spam_scroll(self, direction):
+        self.direction = direction
         while True:
             if not self.g_pressed:
                 break
-            mouse.Controller().scroll(0, direction)
+            pymouse.Controller().scroll(0, direction)
             time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
 
     # Function to handle key events
     def on_action(self, event):
-        key_name = event.name.lower()  # Convert key name to lowercase
-        if event.event_type == keyboard.KEY_DOWN:
-            if not self.is_modifier:
-                for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows']:
-                    if modifier in key_name:
-                        key_name = key_name.replace(modifier, '')
-            if key_name == self.trigger_key_down:
-                self.g_pressed = True
-                if not self.scroll_thread_down or not self.scroll_thread_down.is_alive():
-                    self.scroll_thread_down = threading.Thread(target=self.spam_scroll, args=(-1,))
-                    self.scroll_thread_down.start()
-            elif key_name == self.trigger_key_up:
-                self.g_pressed = True
-                if not self.scroll_thread_up or not self.scroll_thread_up.is_alive():
-                    self.scroll_thread_up = threading.Thread(target=self.spam_scroll, args=(1,))
-                    self.scroll_thread_up.start()
-        elif event.event_type == keyboard.KEY_UP:
-            if key_name == self.trigger_key_down or key_name == self.trigger_key_up:
-                self.g_pressed = False
+        # To note : the 'spam_scroll' function breaks whenever 'g_pressed' is False
+        self.mutex.acquire()
+        if type(event) == keyboard.KeyboardEvent:
+            key_name = event.name.lower()  # Convert key name to lowercase
+            if event.event_type == keyboard.KEY_DOWN:
+                if not self.is_modifier:
+                    for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows']:
+                        if modifier in key_name:
+                            key_name = key_name.replace(modifier, '')
+                if key_name == self.trigger_key_down:
+                    self.start_scroll(-1)
+                elif key_name == self.trigger_key_up:
+                    self.start_scroll(1)
+            elif event.event_type == keyboard.KEY_UP:
+                if (key_name == self.trigger_key_down and (self.direction == -1)) or (key_name == self.trigger_key_up and (self.direction == 1)):
+                    self.g_pressed = False
+        elif type(event) == mouse.ButtonEvent:
+            key_name = ("mouse_" + event.button)
+            if event.event_type == mouse.DOWN:
+                if  key_name == self.trigger_key_down:
+                    self.start_scroll(-1)
+                elif key_name == self.trigger_key_up:
+                    self.start_scroll(1)
+            elif event.event_type == mouse.UP:
+                if (key_name == self.trigger_key_down and (self.direction == -1)) or (key_name == self.trigger_key_up and (self.direction == 1)):
+                    self.g_pressed = False
+
+        self.mutex.release()
+
+    def start_scroll(self, direction):
+        if not self.scroll_thread or not self.scroll_thread.is_alive():
+            self.g_pressed = True
+            self.scroll_thread = threading.Thread(target=self.spam_scroll, args=(direction,))
+            self.scroll_thread.start()
+        elif direction != self.direction:
+            self.g_pressed = False
+            while self.scroll_thread.is_alive():
+                pass
+            self.g_pressed = True
+            self.scroll_thread = threading.Thread(target=self.spam_scroll, args=(direction,))
+            self.scroll_thread.start()
 
     # Function to handle interval selection
     def set_interval(self):
         self.interval = int(self.interval_entry.get())
         self.save_data() #Save interval
 
+    # def key_hook_callback(event):
+
+    #     pass
     # Function to update the trigger keys
     def update_trigger_keys(self, scroll_direction):
         if scroll_direction == "down":
@@ -230,27 +263,44 @@ class DishonoredSpeedrunBhopMacro:
         # Register hook
         self.key_hook_callback = lambda event: self.assign_key(event, scroll_direction)
         keyboard.hook(self.key_hook_callback)
+        mouse.hook(self.key_hook_callback)
 
     def unregister_key_hook(self):
         if self.key_hook_callback:
             keyboard.unhook(self.key_hook_callback)
+            mouse.unhook(self.key_hook_callback)
             self.key_hook_callback = None
 
     # Function to assign the pressed key as the new trigger key
     def assign_key(self, event, scroll_direction):
-        key_name = event.name.lower()
-        self.is_modifier = any(modifier in key_name for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows'])
-
-        if scroll_direction == "down":
-            self.trigger_key_down = key_name
-            self.isModifierDown = any(modifier in key_name for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows'])
-        elif scroll_direction == "up":
-            self.trigger_key_up = key_name
-            self.isModifierUp = any(modifier in key_name for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows'])
+        
+        if (type(event) == keyboard.KeyboardEvent):
+            key_name = event.name.lower()
+            self.is_modifier = any(modifier in key_name for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows'])
+            
+            if scroll_direction == "down":
+                self.trigger_keyboard_down = True
+                self.trigger_key_down = key_name
+                self.isModifierDown = any(modifier in key_name for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows'])
+            elif scroll_direction == "up":
+                self.trigger_keyboard_up = True
+                self.trigger_key_up = key_name
+                self.isModifierUp = any(modifier in key_name for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows'])
+            
+            # Save the assigned keys
+        elif (type(event) == mouse.ButtonEvent):
+            if scroll_direction == "down":
+                self.trigger_keyboard_down = False
+                self.trigger_key_down = "mouse_" + event.button
+            elif scroll_direction == "up":
+                self.trigger_keyboard_up = False
+                self.trigger_key_up = "mouse_" + event.button
+        else:
+            return
         self.update_trigger_keys_after_assign(scroll_direction)
         self.unregister_key_hook()
-        # Save the assigned keys
         self.save_data()
+
 
     def update_trigger_keys_after_assign(self, scroll_direction):
         if scroll_direction == "down":
@@ -270,6 +320,8 @@ class DishonoredSpeedrunBhopMacro:
             file.write(f"trigger_key_down={self.trigger_key_down}\n")
             file.write(f"trigger_key_up={self.trigger_key_up}\n")
             file.write(f"interval={str(self.interval)}\n")
+            file.write(f"is_keyboard_up={str(self.is_keyboard_up)}\n")
+            file.write(f"is_keyboard_down={str(self.is_keyboard_down)}")
 
     # Function to load the assigned keys from a file
     def load_data(self):
@@ -286,6 +338,10 @@ class DishonoredSpeedrunBhopMacro:
                             self.trigger_key_up = value
                         elif key == "interval":
                             self.interval = int(value)
+                        elif key == "is_keyboard_up":
+                            self.is_keyboard_up = (value == "True")
+                        elif key == "is_keyboard_down":
+                            self.is_keyboard_down = (value == "True")
 
     # Function to load fonts from a directory
     def load_fonts_from_dir(self, directory):
@@ -318,4 +374,4 @@ class DishonoredSpeedrunBhopMacro:
             self.isPro = True
 
 # Create an instance of the class
-DishonoredSpeedrunBhopMacro()
+dh = DishonoredSpeedrunBhopMacro()

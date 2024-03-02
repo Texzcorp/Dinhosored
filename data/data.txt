@@ -1,3 +1,5 @@
 trigger_key_down=g
 trigger_key_up=h
 interval=5
+is_keyboard_up=False
+is_keyboard_down=False
