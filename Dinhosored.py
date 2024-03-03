@@ -201,7 +201,6 @@ class DishonoredSpeedrunBhopMacro:
 
     # Function to handle key events
     def on_action(self, event):
-        # To note : the 'spam_scroll' function breaks whenever 'g_pressed' is False
         self.mutex.acquire()
         if type(event) == keyboard.KeyboardEvent:
             key_name = event.name.lower()  # Convert key name to lowercase
@@ -213,7 +212,8 @@ class DishonoredSpeedrunBhopMacro:
                 if key_name == self.trigger_key_down:
                     self.start_scroll(-1)
                 elif key_name == self.trigger_key_up:
-                    self.start_scroll(1)
+                    if not self.g_pressed:  # Check if the opposite direction key is not already pressed
+                        self.start_scroll(1)
             elif event.event_type == keyboard.KEY_UP:
                 if (key_name == self.trigger_key_down and (self.direction == -1)) or (key_name == self.trigger_key_up and (self.direction == 1)):
                     self.g_pressed = False
@@ -223,12 +223,14 @@ class DishonoredSpeedrunBhopMacro:
                 if  key_name == self.trigger_key_down:
                     self.start_scroll(-1)
                 elif key_name == self.trigger_key_up:
-                    self.start_scroll(1)
+                    if not self.g_pressed:  # Check if the opposite direction key is not already pressed
+                        self.start_scroll(1)
             elif event.event_type == mouse.UP:
                 if (key_name == self.trigger_key_down and (self.direction == -1)) or (key_name == self.trigger_key_up and (self.direction == 1)):
                     self.g_pressed = False
 
         self.mutex.release()
+
 
     def start_scroll(self, direction):
         if not self.scroll_thread or not self.scroll_thread.is_alive():
