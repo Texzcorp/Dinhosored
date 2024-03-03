@@ -12,3 +12,7 @@ Bhop script to be supa supa fast in dishonored speedruns with an UI
 Click on the "Set Interval" button to confirm the interval. **By default, it's set to 5ms, which seems to be the most optimized for games like Dishonored 2 and Dishonored Death of the Outsider.**
 
 Once these steps are completed, you should be able to simulate bhop effectively using the FreeScroll wheel with the assigned keys and the specified scrolling speed.
+
+____
+
+Thx to ZebtyFive for helping adding mouse support, and managing concurrency issues, explaining things about mutex etc. also https://github.com/Monipak
