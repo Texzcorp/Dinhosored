@@ -15,4 +15,4 @@ Once these steps are completed, you should be able to simulate bhop effectively 
 
 ____
 
-Thx to ZebtyFive for helping adding mouse support, and managing concurrency issues, explaining things about mutex etc. also https://github.com/Monipak
+Thx to ZebtyFive(https://github.com/Monipak) for helping adding mouse support, and managing concurrency issues, explaining things about mutex etc. also 
