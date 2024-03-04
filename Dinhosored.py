@@ -30,6 +30,8 @@ class DishonoredSpeedrunBhopMacro:
         self.scroll_up_thread = None
         self.scroll_down_thread = None 
         self.interval = 5  # Default interval in milliseconds
+        self.interval_up = 1200
+        self.interval_down = 400
         self.isModifierUp = False  # Variable to store if the trigger key is a modifier key
         self.isModifierDown = False # Variable to store if the trigger key is a modifier key
         self.is_modifier = False
@@ -161,37 +163,54 @@ class DishonoredSpeedrunBhopMacro:
         self.title_label.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky="w")
 
         # Create and place a label for interval selection
-        self.interval_label = ttk.Label(self.frame, text="Interval (ms):", style="Transparent.TLabel")
-        self.interval_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.interval_label_down = ttk.Label(self.frame, text="Interval down (ms):", style="Transparent.TLabel")
+        self.interval_label_down.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # Create and place an entry for interval input
-        self.interval_entry = ttk.Entry(self.frame, font=self.custom_font, style="EntryStyle.TEntry")
-        self.interval_entry.insert(0, str(self.interval))
-        self.interval_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.interval_entry_down = ttk.Entry(self.frame, font=self.custom_font, style="EntryStyle.TEntry")
+        self.interval_entry_down.insert(0, str(self.interval_down))
+        self.interval_entry_down.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
 
         # Create and place a button to set the interval
-        self.set_interval_button = ttk.Button(self.frame, text="Set Interval", command=self.set_interval, style="Custom.TButton")
-        self.set_interval_button.grid(row=1, column=2, padx=5, pady=5, sticky="w")
+        self.set_interval_button_down = ttk.Button(self.frame, text="Set Interval", command=self.set_interval_down, style="Custom.TButton")
+        self.set_interval_button_down.grid(row=3, column=2, padx=5, pady=5, sticky="w")
+
+        # Create and place a label for interval selection
+        self.interval_label_up = ttk.Label(self.frame, text="Interval up (ms):", style="Transparent.TLabel")
+        self.interval_label_up.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+
+        # Create and place an entry for interval input
+        self.interval_entry_up = ttk.Entry(self.frame, font=self.custom_font, style="EntryStyle.TEntry")
+        self.interval_entry_up.insert(0, str(self.interval_up))
+        self.interval_entry_up.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
+
+        # Create and place a button to set the interval
+        self.set_interval_button_up = ttk.Button(self.frame, text="Set Interval", command=self.set_interval_up, style="Custom.TButton")
+        self.set_interval_button_up.grid(row=7, column=2, padx=5, pady=5, sticky="w")
 
         # Create and place a label to display the current trigger key for scrolling down
         self.trigger_key_label_down = ttk.Label(self.frame, text=f"Current Scroll Down Key: {self.trigger_key_down}", style="Transparent.TLabel")
-        self.trigger_key_label_down.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.trigger_key_label_down.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Create and place a button to assign another key for scrolling down
         self.assign_key_button_down = ttk.Button(self.frame, text="Assign Scroll Down Key", command=lambda: self.update_trigger_keys("down"), style="Custom.TButton")
-        self.assign_key_button_down.grid(row=3, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.assign_key_button_down.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+
+        # Create and place a label to display the current trigger key for scrolling down
+        self.trigger_key_label_down = ttk.Label(self.frame, text=f" ", style="Transparent.TLabel")
+        self.trigger_key_label_down.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Create and place a label to display the current trigger key for scrolling up
         self.trigger_key_label_up = ttk.Label(self.frame, text=f"Current Scroll Up Key: {self.trigger_key_up}", style="Transparent.TLabel")
-        self.trigger_key_label_up.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.trigger_key_label_up.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Create and place a button to assign another key for scrolling up
         self.assign_key_button_up = ttk.Button(self.frame, text="Assign Scroll Up Key", command=lambda: self.update_trigger_keys("up"), style="Custom.TButton")
-        self.assign_key_button_up.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.assign_key_button_up.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Create and place a button to assign another key for scrolling up
         self.pro_button = ttk.Button(self.frame, text="100% pro Mode", command=self.promode, style="Pro.TButton")
-        self.pro_button.grid(row=6, column=2, padx=5, pady=5, sticky="es")
+        self.pro_button.grid(row=8, column=2, padx=5, pady=5, sticky="es")
 
         # Configure grid columns and rows to expand uniformly
         for i in range(3):
@@ -236,20 +255,47 @@ class DishonoredSpeedrunBhopMacro:
             pymouse.Controller().scroll(0, direction)
             time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
 
+    def gcd(self, a, b):
+        while b:
+            a, b = b, a % b
+        return a
+
     def spam_any_scroll(self):
-        current_counter = 0            
+        # Calcul des facteurs de division pour les touches down et up
+        gcd_interval = self.gcd(self.interval_down, self.interval_up)
+        # Calcul des facteurs en divisant chaque intervalle par le gcd
+        down_factor = self.interval_down // gcd_interval
+        up_factor = self.interval_up // gcd_interval
+        cpt = 0
+
+
         while not self.kill_any_scroll_thread:
-            if self.g_pressed_down or self.g_pressed_up:
-                previous_counter = current_counter
-                current_counter = time.perf_counter_ns()
-                if previous_counter != 0:
-                    print(current_counter - previous_counter)
-                if self.g_pressed_down:
+            if self.g_pressed_down ^ self.g_pressed_up:
+                cpt += 1
+
+                if cpt % self.interval_down == 0 and self.g_pressed_down:
                     pymouse.Controller().scroll(0, -1)
-                # time.sleep(self.interval / 1000 / 2)
-                if self.g_pressed_up:
+                    time.sleep(self.interval_down / 1000 / 1)
+                    print(str(self.interval_down / 1000 / 1))
+
+                if cpt % self.interval_up == 0 and self.g_pressed_up:
                     pymouse.Controller().scroll(0, 1)
-                time.sleep(self.interval / 1000)
+                    time.sleep(self.interval_up / 1000 / 1)
+                    print(str(self.interval_up / 1000 / 1))
+
+            elif self.g_pressed_down and self.g_pressed_up:
+                cpt += 1
+
+                if cpt % self.interval_down == 0 and self.g_pressed_down:
+                    pymouse.Controller().scroll(0, -1)
+                    time.sleep(self.interval_down / 1000 / down_factor)
+                    print("down" + str(self.interval_down / 1000 / down_factor))
+
+                if cpt % self.interval_up == 0 and self.g_pressed_up:
+                    pymouse.Controller().scroll(0, 1)
+                    time.sleep(self.interval_up / 1000 / up_factor)
+                    print("up" + str(self.interval_up / 1000 / up_factor))
+                
             else:
                 time.sleep(0.001)
 
@@ -319,8 +365,13 @@ class DishonoredSpeedrunBhopMacro:
         self.any_scroll_thread.start()
 
     # Function to handle interval selection
-    def set_interval(self):
-        self.interval = int(self.interval_entry.get())
+    def set_interval_down(self):
+        self.interval_down = float(self.interval_entry_down.get())
+        print(self.interval)
+        self.save_data() #Save interval
+        
+    def set_interval_up(self):
+        self.interval_up = float(self.interval_entry_up.get())
         print(self.interval)
         self.save_data() #Save interval
 
@@ -406,7 +457,8 @@ class DishonoredSpeedrunBhopMacro:
         with open(data_file_path, "w") as file:
             file.write(f"trigger_key_down={self.trigger_key_down}\n")
             file.write(f"trigger_key_up={self.trigger_key_up}\n")
-            file.write(f"interval={str(self.interval)}\n")
+            file.write(f"interval_down={str(self.interval_down)}\n")
+            file.write(f"interval_up={str(self.interval_up)}\n")
             file.write(f"is_keyboard_up={str(self.is_keyboard_up)}\n")
             file.write(f"is_keyboard_down={str(self.is_keyboard_down)}")
 
@@ -423,8 +475,10 @@ class DishonoredSpeedrunBhopMacro:
                             self.trigger_key_down = value
                         elif key == "trigger_key_up":
                             self.trigger_key_up = value
-                        elif key == "interval":
-                            self.interval = int(value)
+                        elif key == "interval_down":
+                            self.interval_down = float(value)
+                        elif key == "interval_up":
+                            self.interval_up = float(value)
                         elif key == "is_keyboard_up":
                             self.is_keyboard_up = (value == "True")
                         elif key == "is_keyboard_down":
