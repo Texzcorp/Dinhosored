@@ -13,6 +13,7 @@ from PyQt6.QtCore import QDir
 from PyQt6.QtWidgets import QApplication
 import os
 import sys
+import winreg
 import tkinter.font as tkFont
 from pathlib import Path
 
@@ -22,9 +23,12 @@ class DishonoredSpeedrunBhopMacro:
         # Chemin vers le dossier de données
         self.script_dir = os.path.dirname(__file__)
         self.data_dir = os.path.join(self.script_dir, "data")
+        self.s_data_dir = self.get_user_data_dir("Dinhosored")
         # Initialize variables
-        self.g_pressed = False
-        self.scroll_thread = None
+        self.g_pressed_up = False
+        self.g_pressed_down = False
+        self.scroll_up_thread = None
+        self.scroll_down_thread = None 
         self.interval = 5  # Default interval in milliseconds
         self.isModifierUp = False  # Variable to store if the trigger key is a modifier key
         self.isModifierDown = False # Variable to store if the trigger key is a modifier key
@@ -33,10 +37,15 @@ class DishonoredSpeedrunBhopMacro:
         self.logo_size = (3, 3)
         self.is_keyboard_up = None
         self.is_keyboard_down = None
+        self.trigger_key_down = None
+        self.trigger_key_up = None
+        self.any_scroll_thread = None
+        self.kill_any_scroll_thread = False
+
+        self.start_any_scroll()
 
         self.direction = 0
 
-        self.mutex = threading.Lock()
         # Create a Qt application
         self.app = QtWidgets.QApplication(sys.argv)
 
@@ -55,6 +64,8 @@ class DishonoredSpeedrunBhopMacro:
         # Create a Tkinter window
         self.root = tk.Tk()
         self.root.title("Dinhosored")
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Chemin vers le fichier ICO relatif au répertoire du script
         icon_path = os.path.join(self.data_dir, "Dinhosored.ico")
@@ -190,64 +201,127 @@ class DishonoredSpeedrunBhopMacro:
         # Keep the Tkinter window running
         self.root.mainloop()
 
+    def on_close(self):
+        print("Fenêtre fermée")
+        self.kill_any_scroll_thread = True
+        self.any_scroll_thread.join()
+        self.root.destroy()
+
     # Function to continuously spam the scroll wheel event
-    def spam_scroll(self, direction):
+    def spam_scroll_up(self, direction):
         self.direction = direction
+        current_counter = 0
         while True:
-            if not self.g_pressed:
+            previous_counter = current_counter
+            current_counter = time.perf_counter_ns()
+            if previous_counter != 0:
+                print(current_counter - previous_counter)
+            if not self.g_pressed_up:
                 break
             pymouse.Controller().scroll(0, direction)
             time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
 
+
+        # Function to continuously spam the scroll wheel event
+    def spam_scroll_down(self, direction):
+        self.direction = direction
+        current_counter = 0
+        while True:
+            previous_counter = current_counter
+            current_counter = time.perf_counter_ns()
+            if previous_counter != 0:
+                print(current_counter - previous_counter)
+            if not self.g_pressed_down:
+                break
+            pymouse.Controller().scroll(0, direction)
+            time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
+
+    def spam_any_scroll(self):
+        current_counter = 0            
+        while not self.kill_any_scroll_thread:
+            if self.g_pressed_down or self.g_pressed_up:
+                previous_counter = current_counter
+                current_counter = time.perf_counter_ns()
+                if previous_counter != 0:
+                    print(current_counter - previous_counter)
+                if self.g_pressed_down:
+                    pymouse.Controller().scroll(0, -1)
+                # time.sleep(self.interval / 1000 / 2)
+                if self.g_pressed_up:
+                    pymouse.Controller().scroll(0, 1)
+                time.sleep(self.interval / 1000)
+            else:
+                time.sleep(0.001)
+
     # Function to handle key events
     def on_action(self, event):
-        self.mutex.acquire()
         if type(event) == keyboard.KeyboardEvent:
             key_name = event.name.lower()  # Convert key name to lowercase
+            if not self.is_modifier:
+                for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows']:
+                    if modifier in key_name:
+                        key_name = key_name.replace(modifier, '')
             if event.event_type == keyboard.KEY_DOWN:
-                if not self.is_modifier:
-                    for modifier in ['alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left shift', 'left windows', 'right alt', 'right ctrl', 'right shift', 'right windows', 'shift', 'windows']:
-                        if modifier in key_name:
-                            key_name = key_name.replace(modifier, '')
                 if key_name == self.trigger_key_down:
-                    self.start_scroll(-1)
+                    # self.start_scroll_down()
+                    self.g_pressed_down = True
                 elif key_name == self.trigger_key_up:
-                    if not self.g_pressed:  # Check if the opposite direction key is not already pressed
-                        self.start_scroll(1)
+                    # self.start_scroll_up()
+                    self.g_pressed_up = True
             elif event.event_type == keyboard.KEY_UP:
-                if (key_name == self.trigger_key_down and (self.direction == -1)) or (key_name == self.trigger_key_up and (self.direction == 1)):
-                    self.g_pressed = False
+                if key_name == self.trigger_key_down:
+                    self.g_pressed_down = False
+                elif key_name == self.trigger_key_up:
+                    self.g_pressed_up = False
         elif type(event) == mouse.ButtonEvent:
             key_name = ("mouse_" + event.button)
             if event.event_type == mouse.DOWN:
                 if  key_name == self.trigger_key_down:
-                    self.start_scroll(-1)
+                    # self.start_scroll_down()
+                    self.g_pressed_down = True
                 elif key_name == self.trigger_key_up:
-                    if not self.g_pressed:  # Check if the opposite direction key is not already pressed
-                        self.start_scroll(1)
+                    # self.start_scroll_up()
+                    self.g_pressed_up = True
             elif event.event_type == mouse.UP:
-                if (key_name == self.trigger_key_down and (self.direction == -1)) or (key_name == self.trigger_key_up and (self.direction == 1)):
-                    self.g_pressed = False
+                if key_name == self.trigger_key_down:
+                    self.g_pressed_down = False
+                elif key_name == self.trigger_key_up:
+                    self.g_pressed_up = False
 
-        self.mutex.release()
+    def start_scroll_down(self):
+        if not self.scroll_down_thread or not self.scroll_down_thread.is_alive():
+            self.g_pressed_down = True
+            self.scroll_down_thread = threading.Thread(target=self.spam_scroll_down, args=(-1,))
+            self.scroll_down_thread.start()
+        # elif self.direction != -1:
+        #     self.g_pressed = False
+        #     while self.scroll_down_thread.is_alive():
+        #         pass
+        #     self.g_pressed = True
+        #     self.scroll_down_thread = threading.Thread(target=self.spam_scroll_down, args=(-1,))
+        #     self.scroll_down_thread.start()
 
-
-    def start_scroll(self, direction):
-        if not self.scroll_thread or not self.scroll_thread.is_alive():
-            self.g_pressed = True
-            self.scroll_thread = threading.Thread(target=self.spam_scroll, args=(direction,))
-            self.scroll_thread.start()
-        elif direction != self.direction:
-            self.g_pressed = False
-            while self.scroll_thread.is_alive():
-                pass
-            self.g_pressed = True
-            self.scroll_thread = threading.Thread(target=self.spam_scroll, args=(direction,))
-            self.scroll_thread.start()
+    def start_scroll_up(self):
+        if not self.scroll_up_thread or not self.scroll_up_thread.is_alive():
+            self.g_pressed_up = True
+            self.scroll_up_thread = threading.Thread(target=self.spam_scroll_up, args=(1,))
+            self.scroll_up_thread.start()
+        # elif self.direction != 1:
+        #     self.g_pressed = False
+        #     while self.scroll_up_thread.is_alive():
+        #         pass
+        #     self.g_pressed = True
+        #     self.scroll_up_thread = threading.Thread(target=self.spam_scroll_up, args=(1,))
+        #     self.scroll_up_thread.start()
+            
+    def start_any_scroll(self):
+        self.any_scroll_thread = threading.Thread(target=self.spam_any_scroll)
+        self.any_scroll_thread.start()
 
     # Function to handle interval selection
     def set_interval(self):
         self.interval = int(self.interval_entry.get())
+        print(self.interval)
         self.save_data() #Save interval
 
     # def key_hook_callback(event):
@@ -314,10 +388,21 @@ class DishonoredSpeedrunBhopMacro:
             self.assign_key_button_up.config(text="Assign Another Key")
             self.assign_key_button_up.config(state=tk.NORMAL)
 
+    def get_user_data_dir(self, appname: str) -> Path:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders",
+        )
+        dir_, _ = winreg.QueryValueEx(key, "Local AppData")
+        ans = Path(dir_).resolve(strict=False)
+        return ans.joinpath(appname)
+
     # Function to save the assigned keys to a file
     def save_data(self):
-        # Chemin complet du fichier de données
-        data_file_path = os.path.join(self.data_dir, "data.txt")
+        data_dir = self.s_data_dir
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)  # Create the directory if it doesn't exist
+        data_file_path = os.path.join(data_dir, "data.txt")
         with open(data_file_path, "w") as file:
             file.write(f"trigger_key_down={self.trigger_key_down}\n")
             file.write(f"trigger_key_up={self.trigger_key_up}\n")
@@ -327,7 +412,7 @@ class DishonoredSpeedrunBhopMacro:
 
     # Function to load the assigned keys from a file
     def load_data(self):
-        data_file_path = os.path.join(self.data_dir, "data.txt")
+        data_file_path = os.path.join(self.s_data_dir, "data.txt")
         if os.path.isfile(data_file_path):
             with open(data_file_path, "r") as file:
                 for line in file:
@@ -376,4 +461,4 @@ class DishonoredSpeedrunBhopMacro:
             self.isPro = True
 
 # Create an instance of the class
-dh = DishonoredSpeedrunBhopMacro()
+DishonoredSpeedrunBhopMacro()
