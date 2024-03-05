@@ -164,49 +164,49 @@ class DishonoredSpeedrunBhopMacro:
 
         # Create and place a label for interval selection
         self.interval_label_down = ttk.Label(self.frame, text="Interval down (ms):", style="Transparent.TLabel")
-        self.interval_label_down.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.interval_label_down.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
         # Create and place an entry for interval input
         self.interval_entry_down = ttk.Entry(self.frame, font=self.custom_font, style="EntryStyle.TEntry")
         self.interval_entry_down.insert(0, str(self.interval_down))
-        self.interval_entry_down.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+        self.interval_entry_down.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
 
         # Create and place a button to set the interval
         self.set_interval_button_down = ttk.Button(self.frame, text="Set Interval", command=self.set_interval_down, style="Custom.TButton")
-        self.set_interval_button_down.grid(row=3, column=2, padx=5, pady=5, sticky="w")
+        self.set_interval_button_down.grid(row=7, column=2, padx=5, pady=5, sticky="w")
 
         # Create and place a label for interval selection
         self.interval_label_up = ttk.Label(self.frame, text="Interval up (ms):", style="Transparent.TLabel")
-        self.interval_label_up.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        self.interval_label_up.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # Create and place an entry for interval input
         self.interval_entry_up = ttk.Entry(self.frame, font=self.custom_font, style="EntryStyle.TEntry")
         self.interval_entry_up.insert(0, str(self.interval_up))
-        self.interval_entry_up.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
+        self.interval_entry_up.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
 
         # Create and place a button to set the interval
         self.set_interval_button_up = ttk.Button(self.frame, text="Set Interval", command=self.set_interval_up, style="Custom.TButton")
-        self.set_interval_button_up.grid(row=7, column=2, padx=5, pady=5, sticky="w")
+        self.set_interval_button_up.grid(row=3, column=2, padx=5, pady=5, sticky="w")
 
         # Create and place a label to display the current trigger key for scrolling down
         self.trigger_key_label_down = ttk.Label(self.frame, text=f"Current Scroll Down Key: {self.trigger_key_down}", style="Transparent.TLabel")
-        self.trigger_key_label_down.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.trigger_key_label_down.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Create and place a button to assign another key for scrolling down
         self.assign_key_button_down = ttk.Button(self.frame, text="Assign Scroll Down Key", command=lambda: self.update_trigger_keys("down"), style="Custom.TButton")
-        self.assign_key_button_down.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.assign_key_button_down.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Create and place a label to display the current trigger key for scrolling down
-        self.trigger_key_label_down = ttk.Label(self.frame, text=f" ", style="Transparent.TLabel")
-        self.trigger_key_label_down.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.trigger_key_label_empty = ttk.Label(self.frame, text=f" ", style="Transparent.TLabel")
+        self.trigger_key_label_empty.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Create and place a label to display the current trigger key for scrolling up
         self.trigger_key_label_up = ttk.Label(self.frame, text=f"Current Scroll Up Key: {self.trigger_key_up}", style="Transparent.TLabel")
-        self.trigger_key_label_up.grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.trigger_key_label_up.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Create and place a button to assign another key for scrolling up
         self.assign_key_button_up = ttk.Button(self.frame, text="Assign Scroll Up Key", command=lambda: self.update_trigger_keys("up"), style="Custom.TButton")
-        self.assign_key_button_up.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.assign_key_button_up.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Create and place a button to assign another key for scrolling up
         self.pro_button = ttk.Button(self.frame, text="100% pro Mode", command=self.promode, style="Pro.TButton")
@@ -226,34 +226,34 @@ class DishonoredSpeedrunBhopMacro:
         self.any_scroll_thread.join()
         self.root.destroy()
 
-    # Function to continuously spam the scroll wheel event
-    def spam_scroll_up(self, direction):
-        self.direction = direction
-        current_counter = 0
-        while True:
-            previous_counter = current_counter
-            current_counter = time.perf_counter_ns()
-            if previous_counter != 0:
-                print(current_counter - previous_counter)
-            if not self.g_pressed_up:
-                break
-            pymouse.Controller().scroll(0, direction)
-            time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
+    # # Function to continuously spam the scroll wheel event
+    # def spam_scroll_up(self, direction):
+    #     self.direction = direction
+    #     current_counter = 0
+    #     while True:
+    #         previous_counter = current_counter
+    #         current_counter = time.perf_counter_ns()
+    #         if previous_counter != 0:
+    #             print(current_counter - previous_counter)
+    #         if not self.g_pressed_up:
+    #             break
+    #         pymouse.Controller().scroll(0, direction)
+    #         time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
 
 
-        # Function to continuously spam the scroll wheel event
-    def spam_scroll_down(self, direction):
-        self.direction = direction
-        current_counter = 0
-        while True:
-            previous_counter = current_counter
-            current_counter = time.perf_counter_ns()
-            if previous_counter != 0:
-                print(current_counter - previous_counter)
-            if not self.g_pressed_down:
-                break
-            pymouse.Controller().scroll(0, direction)
-            time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
+    #     # Function to continuously spam the scroll wheel event
+    # def spam_scroll_down(self, direction):
+    #     self.direction = direction
+    #     current_counter = 0
+    #     while True:
+    #         previous_counter = current_counter
+    #         current_counter = time.perf_counter_ns()
+    #         if previous_counter != 0:
+    #             print(current_counter - previous_counter)
+    #         if not self.g_pressed_down:
+    #             break
+    #         pymouse.Controller().scroll(0, direction)
+    #         time.sleep(self.interval / 1000)  # Sleep for the specified interval in milliseconds
 
     def gcd(self, a, b):
         while b:
@@ -261,9 +261,7 @@ class DishonoredSpeedrunBhopMacro:
         return a
 
     def spam_any_scroll(self):
-        # Calcul des facteurs de division pour les touches down et up
         gcd_interval = self.gcd(self.interval_down, self.interval_up)
-        # Calcul des facteurs en divisant chaque intervalle par le gcd
         down_factor = self.interval_down // gcd_interval
         up_factor = self.interval_up // gcd_interval
         cpt = 0
@@ -334,30 +332,30 @@ class DishonoredSpeedrunBhopMacro:
                 elif key_name == self.trigger_key_up:
                     self.g_pressed_up = False
 
-    def start_scroll_down(self):
-        if not self.scroll_down_thread or not self.scroll_down_thread.is_alive():
-            self.g_pressed_down = True
-            self.scroll_down_thread = threading.Thread(target=self.spam_scroll_down, args=(-1,))
-            self.scroll_down_thread.start()
-        # elif self.direction != -1:
-        #     self.g_pressed = False
-        #     while self.scroll_down_thread.is_alive():
-        #         pass
-        #     self.g_pressed = True
-        #     self.scroll_down_thread = threading.Thread(target=self.spam_scroll_down, args=(-1,))
-        #     self.scroll_down_thread.start()
+    # def start_scroll_down(self):
+    #     if not self.scroll_down_thread or not self.scroll_down_thread.is_alive():
+    #         self.g_pressed_down = True
+    #         self.scroll_down_thread = threading.Thread(target=self.spam_scroll_down, args=(-1,))
+    #         self.scroll_down_thread.start()
+    #     # elif self.direction != -1:
+    #     #     self.g_pressed = False
+    #     #     while self.scroll_down_thread.is_alive():
+    #     #         pass
+    #     #     self.g_pressed = True
+    #     #     self.scroll_down_thread = threading.Thread(target=self.spam_scroll_down, args=(-1,))
+    #     #     self.scroll_down_thread.start()
 
-    def start_scroll_up(self):
-        if not self.scroll_up_thread or not self.scroll_up_thread.is_alive():
-            self.g_pressed_up = True
-            self.scroll_up_thread = threading.Thread(target=self.spam_scroll_up, args=(1,))
-            self.scroll_up_thread.start()
-        # elif self.direction != 1:
-        #     self.g_pressed = False
-        #     while self.scroll_up_thread.is_alive():
-        #         pass
-        #     self.g_pressed = True
-        #     self.scroll_up_thread = threading.Thread(target=self.spam_scroll_up, args=(1,))
+    # def start_scroll_up(self):
+    #     if not self.scroll_up_thread or not self.scroll_up_thread.is_alive():
+    #         self.g_pressed_up = True
+    #         self.scroll_up_thread = threading.Thread(target=self.spam_scroll_up, args=(1,))
+    #         self.scroll_up_thread.start()
+    #     # elif self.direction != 1:
+    #     #     self.g_pressed = False
+    #     #     while self.scroll_up_thread.is_alive():
+    #     #         pass
+    #     #     self.g_pressed = True
+    #     #     self.scroll_up_thread = threading.Thread(target=self.spam_scroll_up, args=(1,))
         #     self.scroll_up_thread.start()
             
     def start_any_scroll(self):
@@ -375,9 +373,6 @@ class DishonoredSpeedrunBhopMacro:
         print(self.interval)
         self.save_data() #Save interval
 
-    # def key_hook_callback(event):
-
-    #     pass
     # Function to update the trigger keys
     def update_trigger_keys(self, scroll_direction):
         if scroll_direction == "down":
